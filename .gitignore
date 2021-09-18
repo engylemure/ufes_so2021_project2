@@ -1,0 +1,16 @@
+# Build files
+*.o
+build/
+# Binaries or Target path
+*.bin
+target/
+# Editor files
+.vscode
+.idea
+cmake-build-debug
+
+# dump core
+vgcore.*
+
+# massif
+massif.*
