@@ -32,12 +32,12 @@ int main(void) {
     BathroomMonitor* monitor = new_bathroom_monitor(BATHROOM_SIZE);
     for (i = 0; i < FOOTBALL_FANS_SIZE; i++) {
         void* args[2];
-        args[0] = (uintptr_t)i;
+        args[0] = (void*)(uintptr_t)i;
         args[1] = monitor;
         if (i % 2 == 0) {
-            pthread_create(&football_fans[i], NULL, fla_wants_in, args);
+            pthread_create(&football_fans[i], NULL, (void *(*)(void*)) fla_wants_in, args);
         } else {
-            pthread_create(&football_fans[i], NULL, vas_wants_in, args);
+            pthread_create(&football_fans[i], NULL, (void *(*)(void*)) vas_wants_in, args);
         }
     }
     for (i = 0; i < FOOTBALL_FANS_SIZE; i++) {
