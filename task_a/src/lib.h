@@ -35,12 +35,20 @@ typedef struct bathroomMonitor {
     pthread_cond_t can_vascaino_enter;
 } BathroomMonitor;
 
+typedef struct bathroomMonitorInfo {
+    enum TeamOnBathroom occupied_by;
+    unsigned int amount_on_bathroom;
+    unsigned int flamenguistas_waiting;
+    unsigned int vascainos_waiting;
+} BathroomMonitorInfo;
+
 /**
  * @brief Creates new BathroomMonitor object
  * 
  * @return BathroomMonitor* 
  */
 BathroomMonitor *new_bathroom_monitor(unsigned int size);
+BathroomMonitorInfo* bathroom_monitor_info(BathroomMonitor  *monitor);
 char* bathroom_monitor_fmt(BathroomMonitor* monitor);
 void drop_bathroom_monitor(BathroomMonitor* monitor);
 

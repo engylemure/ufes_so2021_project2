@@ -117,22 +117,40 @@ void vascaino_wants_in(BathroomMonitor *monitor) {
     }
 }
 
-
-char *bathroom_monitor_fmt(BathroomMonitor *monitor) {
+BathroomMonitorInfo* bathroom_monitor_info(BathroomMonitor  *monitor) {
     pthread_mutex_lock(&monitor->lock);
-    char *monitor_fmt = malloc(sizeof(char) * 240);
-    char *occupied_by = monitor->occupied_by == None ? "None" : monitor->occupied_by == Flamengo ? "Flamengo"
-                                                                                                 : "Vasco";
+    BathroomMonitorInfo* info = malloc(sizeof(BathroomMonitorInfo));
     int amount_of_used_bathrooms = 0;
     sem_getvalue(&monitor->available_bathrooms, &amount_of_used_bathrooms);
     int amount_on_bathroom = monitor->size - amount_of_used_bathrooms;
+    info->amount_on_bathroom = amount_on_bathroom;
+    info->flamenguistas_waiting = monitor->flamenguistas_waiting;
+    info->vascainos_waiting = monitor->vascainos_waiting;
+    info->occupied_by = monitor->occupied_by;
     pthread_mutex_unlock(&monitor->lock);
+    return info;
+}
+
+char *bathroom_monitor_fmt(BathroomMonitor *monitor) {
+    BathroomMonitorInfo* info = bathroom_monitor_info(monitor);
+    char* occupied_by;
+    switch(info->occupied_by) {
+        case Flamengo:
+            occupied_by = "Flamengo";
+            break;
+        case Vasco:
+            occupied_by = "Vasco";
+            break;
+        default:
+            occupied_by = "None";
+    }
+    char* monitor_fmt = malloc(sizeof(char)*200);
     sprintf(
             monitor_fmt,
             "BathroomMonitor { occupied_by: %s, amount_on_bathroom: %d, flamenguistas_waiting: %d, vascainos_waiting: %d }",
             occupied_by,
-            amount_on_bathroom,
-            monitor->flamenguistas_waiting,
-            monitor->vascainos_waiting);
+            info->amount_on_bathroom,
+            info->flamenguistas_waiting,
+            info->vascainos_waiting);
     return monitor_fmt;
 }
