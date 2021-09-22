@@ -10,9 +10,8 @@ BathroomMonitor *new_bathroom_monitor(unsigned int size) {
     monitor->size = size;
     pthread_cond_init(&monitor->can_flamenguista_enter, NULL);
     pthread_cond_init(&monitor->can_vascaino_enter, NULL);
-    pthread_cond_init(&monitor->is_vascaino_waiting, NULL);
+    pthread_cond_init(&monitor->is_vascaino_waiting_cond, NULL);
     pthread_mutex_init(&monitor->lock, NULL);
-    monitor->amount_on_bathroom = 0;
     monitor->vascainos_waiting = 0;
     monitor->flamenguistas_waiting = 0;
     monitor->is_vascaino_waiting = false;
@@ -30,18 +29,26 @@ void flamenguista_wants_in(BathroomMonitor *monitor) {
     switch (monitor->occupied_by) {
         case Flamengo:
             if (!monitor->is_vascaino_waiting) {
+                monitor->flamenguistas_waiting += 1;
                 pthread_mutex_unlock(&monitor->lock);
                 sem_wait(&monitor->available_bathrooms);
+                pthread_mutex_lock(&monitor->lock);
+                monitor->flamenguistas_waiting -= 1;
+                pthread_mutex_unlock(&monitor->lock);
             } else {
+                monitor->flamenguistas_waiting += 1;
                 pthread_cond_wait(&monitor->is_vascaino_waiting_cond, &monitor->lock);
+                monitor->flamenguistas_waiting -= 1;
                 pthread_mutex_unlock(&monitor->lock);
                 flamenguista_wants_in(monitor);
             }
             break;
         case Vasco:
+            monitor->flamenguistas_waiting += 1;
             pthread_cond_wait(&monitor->can_flamenguista_enter, &monitor->lock);
+            monitor->flamenguistas_waiting -= 1;
             pthread_mutex_unlock(&monitor->lock);
-            vascaino_wants_in(monitor);
+            flamenguista_wants_in(monitor);
             break;
         case None:
             monitor->occupied_by = Flamengo;
@@ -88,13 +95,19 @@ void vascaino_wants_in(BathroomMonitor *monitor) {
     switch (monitor->occupied_by) {
         case Flamengo:
             monitor->is_vascaino_waiting = true;
+            monitor->vascainos_waiting += 1;
             pthread_cond_wait(&monitor->can_vascaino_enter, &monitor->lock);
+            monitor->vascainos_waiting -= 1;
             pthread_mutex_unlock(&monitor->lock);
             vascaino_wants_in(monitor);
             break;
         case Vasco:
+            monitor->vascainos_waiting += 1;
             pthread_mutex_unlock(&monitor->lock);
             sem_wait(&monitor->available_bathrooms);
+            pthread_mutex_lock(&monitor->lock);
+            monitor->vascainos_waiting -= 1;
+            pthread_mutex_unlock(&monitor->lock);
             break;
         case None:
             monitor->occupied_by = Vasco;
@@ -102,4 +115,24 @@ void vascaino_wants_in(BathroomMonitor *monitor) {
             pthread_mutex_unlock(&monitor->lock);
             break;
     }
+}
+
+
+char *bathroom_monitor_fmt(BathroomMonitor *monitor) {
+    pthread_mutex_lock(&monitor->lock);
+    char *monitor_fmt = malloc(sizeof(char) * 240);
+    char *occupied_by = monitor->occupied_by == None ? "None" : monitor->occupied_by == Flamengo ? "Flamengo"
+                                                                                                 : "Vasco";
+    int amount_of_used_bathrooms = 0;
+    sem_getvalue(&monitor->available_bathrooms, &amount_of_used_bathrooms);
+    int amount_on_bathroom = monitor->size - amount_of_used_bathrooms;
+    pthread_mutex_unlock(&monitor->lock);
+    sprintf(
+            monitor_fmt,
+            "BathroomMonitor { occupied_by: %s, amount_on_bathroom: %d, flamenguistas_waiting: %d, vascainos_waiting: %d }",
+            occupied_by,
+            amount_on_bathroom,
+            monitor->flamenguistas_waiting,
+            monitor->vascainos_waiting);
+    return monitor_fmt;
 }

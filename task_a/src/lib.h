@@ -25,7 +25,6 @@ enum TeamOnBathroom {
 typedef struct bathroomMonitor {
     enum TeamOnBathroom occupied_by;
     unsigned int size;
-    unsigned int amount_on_bathroom;
     unsigned int flamenguistas_waiting;
     unsigned int vascainos_waiting;
     sem_t available_bathrooms;
@@ -42,7 +41,7 @@ typedef struct bathroomMonitor {
  * @return BathroomMonitor* 
  */
 BathroomMonitor *new_bathroom_monitor(unsigned int size);
-
+char* bathroom_monitor_fmt(BathroomMonitor* monitor);
 void drop_bathroom_monitor(BathroomMonitor* monitor);
 
 void flamenguista_wants_in(BathroomMonitor* monitor);
