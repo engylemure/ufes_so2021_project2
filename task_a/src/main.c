@@ -168,7 +168,7 @@ int main(int argc, char *argv[]) {
         time_inside_bathroom,
         team_on_bathroom_str(initial_team),
         should_loop_thread_str);
-    BathroomMonitor *monitor = new_bathroom_monitor(bathroom_size);
+    BathroomMonitor *monitor = new_bathroom_monitor(bathroom_size, Vasco);
     pthread_create(&info_thread, NULL, monitor_info, monitor);
     void *(*initial_thread_cb)(void *) = (void *(*) (void *) )(initial_team == Flamengo ? fla_wants_in : vas_wants_in);
     void *(*second_thread_cb)(void *) = (void *(*) (void *) )(initial_team == Flamengo ? vas_wants_in : fla_wants_in);

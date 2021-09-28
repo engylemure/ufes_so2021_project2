@@ -1,7 +1,7 @@
 #include "./lib.h"
 
-BathroomMonitor *new_bathroom_monitor(unsigned int size) {
-    if (size == 0) {
+BathroomMonitor *new_bathroom_monitor(unsigned int size, enum TeamOnBathroom initial_prioritized_team) {
+    if (size <= 0) {
         perror("number of bathrooms on monitor should be greater than 0!\n");
         exit(1);
     }

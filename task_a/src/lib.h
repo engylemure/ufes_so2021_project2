@@ -19,7 +19,12 @@ enum TeamOnBathroom {
 };
 
 /**
- * @brief structure to describe the bathroom monitor object
+ * @brief structure to describe the bathroom monitor object, it 
+ * controls the amount of threads that can access the available 
+ * total amount of bathrooms that it controls. This monitor provides
+ * some procedures to enter and go out of the bathroom and it handles
+ * the starvation problem by storing and changing the prioritized team that
+ * should go into the bathroom. 
  * 
  */
 typedef struct bathroomMonitor {
@@ -52,7 +57,15 @@ typedef struct bathroomMonitorInfo {
  * 
  * @return BathroomMonitor* 
  */
-BathroomMonitor *new_bathroom_monitor(unsigned int size);
+BathroomMonitor *new_bathroom_monitor(unsigned int size, enum TeamOnBathroom initial_prioritized_team);
+/**
+ * @brief Creates a BathroomMonitorInfo from a BathroomMonitor. It's useful to abstract the access to 
+ * the monitor information in a specific moment, it blocks the current thread until it's possible to
+ * access the monitor information.
+ * 
+ * @param monitor 
+ * @return BathroomMonitorInfo* 
+ */
 BathroomMonitorInfo* bathroom_monitor_info(BathroomMonitor  *monitor);
 char* bathroom_monitor_fmt(BathroomMonitor* monitor);
 const char* team_on_bathroom_str(enum TeamOnBathroom value);
