@@ -30,6 +30,8 @@ typedef struct bathroomMonitor {
     unsigned int vascainos_waiting;
     pthread_mutex_t lock;
     unsigned int amount_on_bathroom;
+    unsigned int amount_of_fans_that_used_the_bathroom;
+    unsigned int occupied_by_used_times;
     pthread_cond_t is_bathroom_available;
     pthread_cond_t can_flamenguista_enter;
     pthread_cond_t can_vascaino_enter;
@@ -39,8 +41,10 @@ typedef struct bathroomMonitorInfo {
     enum TeamOnBathroom occupied_by;
     enum TeamOnBathroom prioritized_team;
     unsigned int amount_on_bathroom;
+    unsigned int amount_of_fans_that_used_the_bathroom;
     unsigned int flamenguistas_waiting;
     unsigned int vascainos_waiting;
+    unsigned int occupied_by_used_times;
 } BathroomMonitorInfo;
 
 /**

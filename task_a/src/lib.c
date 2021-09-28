@@ -16,6 +16,8 @@ BathroomMonitor *new_bathroom_monitor(unsigned int size) {
     monitor->amount_on_bathroom = 0;
     monitor->vascainos_waiting = 0;
     monitor->flamenguistas_waiting = 0;
+    monitor->amount_of_fans_that_used_the_bathroom = 0;
+    monitor->occupied_by_used_times = 0;
     return monitor;
 }
 
@@ -35,7 +37,8 @@ void flamenguista_wants_in(BathroomMonitor *monitor) {
                 flamenguista_wants_in(monitor);
             } else if (monitor->amount_on_bathroom < monitor->size) {
                 monitor->amount_on_bathroom += 1;
-                if (monitor->amount_on_bathroom == monitor->size && monitor->vascainos_waiting) {
+                monitor->occupied_by_used_times += 1;
+                if (monitor->occupied_by_used_times == monitor->size && monitor->vascainos_waiting) {
                     monitor->prioritized_team = Vasco;
                 }
                 pthread_mutex_unlock(&monitor->lock);
@@ -57,6 +60,10 @@ void flamenguista_wants_in(BathroomMonitor *monitor) {
         case None:
             monitor->occupied_by = Flamengo;
             monitor->amount_on_bathroom += 1;
+            monitor->occupied_by_used_times += 1;
+            if (monitor->occupied_by_used_times == monitor->size && monitor->vascainos_waiting) {
+                monitor->prioritized_team = Vasco;
+            }
             pthread_mutex_unlock(&monitor->lock);
             break;
     }
@@ -69,17 +76,20 @@ void flamenguista_goes_out(BathroomMonitor *monitor) {
         monitor->amount_on_bathroom -= 1;
         if (monitor->prioritized_team == Vasco) {
             if (monitor->amount_on_bathroom == 0) {
-                pthread_cond_broadcast(&monitor->can_vascaino_enter);
                 monitor->occupied_by = None;
+                monitor->occupied_by_used_times = 0;
+                pthread_cond_broadcast(&monitor->can_vascaino_enter);
             }
         } else {
             if (monitor->amount_on_bathroom == 0) {
                 monitor->occupied_by = None;
                 monitor->prioritized_team = None;
+                monitor->occupied_by_used_times = 0;
                 pthread_cond_broadcast(&monitor->can_vascaino_enter);
             }
             pthread_cond_broadcast(&monitor->can_flamenguista_enter);
         }
+        monitor->amount_of_fans_that_used_the_bathroom += 1;
     } else {
         pthread_mutex_unlock(&monitor->lock);
         perror("flamenguistas can't go out when the bathroom is occupied by vascainos!\n");
@@ -101,7 +111,8 @@ void vascaino_wants_in(BathroomMonitor *monitor) {
                 vascaino_wants_in(monitor);
             } else if (monitor->amount_on_bathroom < monitor->size) {
                 monitor->amount_on_bathroom += 1;
-                if (monitor->amount_on_bathroom == monitor->size && monitor->flamenguistas_waiting) {
+                monitor->occupied_by_used_times += 1;
+                if (monitor->occupied_by_used_times == monitor->size && monitor->flamenguistas_waiting) {
                     monitor->prioritized_team = Flamengo;
                 }
                 pthread_mutex_unlock(&monitor->lock);
@@ -123,6 +134,10 @@ void vascaino_wants_in(BathroomMonitor *monitor) {
         case None:
             monitor->occupied_by = Vasco;
             monitor->amount_on_bathroom += 1;
+            monitor->occupied_by_used_times += 1;
+            if (monitor->occupied_by_used_times == monitor->size && monitor->flamenguistas_waiting) {
+                monitor->prioritized_team = Flamengo;
+            }
             pthread_mutex_unlock(&monitor->lock);
             break;
     }
@@ -135,17 +150,20 @@ void vascaino_goes_out(BathroomMonitor *monitor) {
         monitor->amount_on_bathroom -= 1;
         if (monitor->prioritized_team == Flamengo) {
             if (monitor->amount_on_bathroom == 0) {
-                pthread_cond_broadcast(&monitor->can_flamenguista_enter);
                 monitor->occupied_by = None;
+                monitor->occupied_by_used_times = 0;
+                pthread_cond_broadcast(&monitor->can_flamenguista_enter);
             }
         } else {
             if (monitor->amount_on_bathroom == 0) {
                 monitor->occupied_by = None;
                 monitor->prioritized_team = None;
+                monitor->occupied_by_used_times = 0;
                 pthread_cond_broadcast(&monitor->can_flamenguista_enter);
             }
             pthread_cond_broadcast(&monitor->can_vascaino_enter);
         }
+        monitor->amount_of_fans_that_used_the_bathroom += 1;
     } else {
         pthread_mutex_unlock(&monitor->lock);
         perror("vascainos can't go out when the bathroom is occupied by flamenguistas!\n");
@@ -164,6 +182,8 @@ BathroomMonitorInfo *bathroom_monitor_info(BathroomMonitor *monitor) {
     info->vascainos_waiting = monitor->vascainos_waiting;
     info->occupied_by = monitor->occupied_by;
     info->prioritized_team = monitor->prioritized_team;
+    info->amount_of_fans_that_used_the_bathroom = monitor->amount_of_fans_that_used_the_bathroom;
+    info->occupied_by_used_times = monitor->occupied_by_used_times;
     pthread_mutex_unlock(&monitor->lock);
     return info;
 }
@@ -186,10 +206,12 @@ char *bathroom_monitor_fmt(BathroomMonitor *monitor) {
     char *monitor_fmt = malloc(sizeof(char) * 200);
     sprintf(
             monitor_fmt,
-            "BathroomMonitor { occupied_by: %s, amount_on_bathroom: %d, flamenguistas_waiting: %d, vascainos_waiting: %d }",
+            "BathroomMonitor { occupied_by: %s, amount_on_bathroom: %d, flamenguistas_waiting: %d, vascainos_waiting: %d, amount_used: %d, occupied_by_times: %d }",
             team_on_bathroom_str(info->occupied_by),
             info->amount_on_bathroom,
             info->flamenguistas_waiting,
-            info->vascainos_waiting);
+            info->vascainos_waiting,
+            info->amount_of_fans_that_used_the_bathroom,
+            info->occupied_by_used_times);
     return monitor_fmt;
 }
