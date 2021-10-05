@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <sys/time.h>
+#include <ctype.h>
 
 void vas_wants_in(void **args) {
     int idx = (uintptr_t) args[0];
@@ -49,11 +50,12 @@ void fill_with_spaces(char *str, unsigned int size) {
     }
 }
 
+bool loop_monitor_info = true;
 void *monitor_info(void *arg) {
     BathroomMonitor *monitor = arg;
     struct timeval start, end;
     gettimeofday(&start, NULL);
-    while (true) {
+    while (loop_monitor_info) {
         gettimeofday(&end, NULL);
         usleep(16 * 1000);
         BathroomMonitorInfo *m_info = bathroom_monitor_info(monitor);
@@ -65,8 +67,8 @@ void *monitor_info(void *arg) {
         printf("\033[A");
         printf("%c[2K", 27);
         double time_taken;
-        time_taken = (end.tv_sec - start.tv_sec) * 1e6;
-        time_taken = (time_taken + (end.tv_usec -
+        time_taken = (double)(end.tv_sec - start.tv_sec) * 1e6;
+        time_taken = (time_taken + (double)(end.tv_usec -
                                     start.tv_usec)) *
                      1e-6;
         printf("\r\t\t\tTime since it started: %.2f s\n\n", time_taken);
@@ -106,13 +108,14 @@ void *monitor_info(void *arg) {
         fflush(stdout);
         free(m_info);
     }
+    return NULL;
 }
 
 
 unsigned int FOOTBALL_FANS_SIZE = 20;
 unsigned int BATHROOM_SIZE = 3;
 unsigned int TIME_BETWEEN_FAN_ARRIVAL = 1;
-unsigned int AMOUNT_OF_TIME_INSIDE_BATHROOM = 1;
+unsigned int AMOUNT_OF_TIME_INSIDE_BATHROOM = 3;
 
 char *get_arg(char *key, char *arg) {
     char *start_of_key = strstr(arg, key);
@@ -130,7 +133,7 @@ int main(int argc, char *argv[]) {
     unsigned int time_between_fans_arrival = TIME_BETWEEN_FAN_ARRIVAL;
     unsigned int time_inside_bathroom = AMOUNT_OF_TIME_INSIDE_BATHROOM;
     bool should_loop_thread = true;
-    enum TeamOnBathroom initial_team = Flamengo;
+    enum TeamOnBathroom first_team = Flamengo;
     int i;
     for (i = 1; i < argc; i++) {
         char *arg;
@@ -147,12 +150,15 @@ int main(int argc, char *argv[]) {
         if ((arg = get_arg("time_inside_bathroom=", argv[i])) != NULL && (val = atoi(arg))) {
             time_inside_bathroom = val;
         }
-        if ((arg = get_arg("initial_team=", argv[i])) != NULL) {
+        if ((arg = get_arg("first_team=", argv[i])) != NULL) {
+            for(i = 0; i < strlen(arg); i++) {
+                arg[i] = (char)tolower(arg[i]);
+            }
             if (strcmp(arg, "v") == 0 || strcmp(arg, "vasco") == 0) {
-                initial_team = Vasco;
+                first_team = Vasco;
             }
         }
-        if ((arg = get_arg("loop_thread=", argv[i]))) {
+        if ((arg = get_arg("loop=", argv[i]))) {
             if (strcmp(arg, "0") == 0 || strcmp(arg, "false") == 0) {
                 should_loop_thread = false;
             }
@@ -164,14 +170,14 @@ int main(int argc, char *argv[]) {
         fans_size,
         bathroom_size,
         time_between_fans_arrival);
-    printf(" time_inside_bathroom: %d sec, initial_team: %s, loop: %s }\n\n\n\n\n\n\n\n",
+    printf(" time_inside_bathroom: %d sec, first_team: %s, loop: %s }\n\n\n\n\n\n\n\n",
         time_inside_bathroom,
-        team_on_bathroom_str(initial_team),
+        team_on_bathroom_str(first_team),
         should_loop_thread_str);
     BathroomMonitor *monitor = new_bathroom_monitor(bathroom_size, Vasco);
     pthread_create(&info_thread, NULL, monitor_info, monitor);
-    void *(*initial_thread_cb)(void *) = (void *(*) (void *) )(initial_team == Flamengo ? fla_wants_in : vas_wants_in);
-    void *(*second_thread_cb)(void *) = (void *(*) (void *) )(initial_team == Flamengo ? vas_wants_in : fla_wants_in);
+    void *(*initial_thread_cb)(void *) = (void *(*) (void *) )(first_team == Flamengo ? fla_wants_in : vas_wants_in);
+    void *(*second_thread_cb)(void *) = (void *(*) (void *) )(first_team == Flamengo ? vas_wants_in : fla_wants_in);
     pthread_t football_fans[fans_size];
     for (i = 0; i < fans_size; i++) {
         void *args[4];
@@ -190,7 +196,7 @@ int main(int argc, char *argv[]) {
         pthread_join(football_fans[i], NULL);
     }
     sleep(1);
-    pthread_cancel(info_thread);
+    loop_monitor_info = false;
     pthread_join(info_thread, NULL);
     printf("\n");
     drop_bathroom_monitor(monitor);

@@ -38,7 +38,7 @@ void flamenguista_wants_in(BathroomMonitor *monitor) {
             } else if (monitor->amount_on_bathroom < monitor->size) {
                 monitor->amount_on_bathroom += 1;
                 monitor->occupied_by_used_times += 1;
-                if (monitor->occupied_by_used_times == monitor->size && monitor->vascainos_waiting) {
+                if (monitor->occupied_by_used_times >= monitor->size && monitor->vascainos_waiting) {
                     monitor->prioritized_team = Vasco;
                 }
                 pthread_mutex_unlock(&monitor->lock);
@@ -61,7 +61,7 @@ void flamenguista_wants_in(BathroomMonitor *monitor) {
             monitor->occupied_by = Flamengo;
             monitor->amount_on_bathroom += 1;
             monitor->occupied_by_used_times += 1;
-            if (monitor->occupied_by_used_times == monitor->size && monitor->vascainos_waiting) {
+            if (monitor->occupied_by_used_times >= monitor->size && monitor->vascainos_waiting) {
                 monitor->prioritized_team = Vasco;
             }
             pthread_mutex_unlock(&monitor->lock);
@@ -72,9 +72,8 @@ void flamenguista_wants_in(BathroomMonitor *monitor) {
 void flamenguista_goes_out(BathroomMonitor *monitor) {
     pthread_mutex_lock(&monitor->lock);
     if (monitor->occupied_by == Flamengo) {
-        bool was_bathroom_full = monitor->amount_on_bathroom == monitor->size;
         monitor->amount_on_bathroom -= 1;
-        if (monitor->prioritized_team == Vasco) {
+        if (monitor->prioritized_team == Vasco && monitor->vascainos_waiting) {
             if (monitor->amount_on_bathroom == 0) {
                 monitor->occupied_by = None;
                 monitor->occupied_by_used_times = 0;
@@ -112,7 +111,7 @@ void vascaino_wants_in(BathroomMonitor *monitor) {
             } else if (monitor->amount_on_bathroom < monitor->size) {
                 monitor->amount_on_bathroom += 1;
                 monitor->occupied_by_used_times += 1;
-                if (monitor->occupied_by_used_times == monitor->size && monitor->flamenguistas_waiting) {
+                if (monitor->occupied_by_used_times >= monitor->size && monitor->flamenguistas_waiting) {
                     monitor->prioritized_team = Flamengo;
                 }
                 pthread_mutex_unlock(&monitor->lock);
@@ -135,7 +134,7 @@ void vascaino_wants_in(BathroomMonitor *monitor) {
             monitor->occupied_by = Vasco;
             monitor->amount_on_bathroom += 1;
             monitor->occupied_by_used_times += 1;
-            if (monitor->occupied_by_used_times == monitor->size && monitor->flamenguistas_waiting) {
+            if (monitor->occupied_by_used_times >= monitor->size && monitor->flamenguistas_waiting) {
                 monitor->prioritized_team = Flamengo;
             }
             pthread_mutex_unlock(&monitor->lock);
@@ -146,9 +145,8 @@ void vascaino_wants_in(BathroomMonitor *monitor) {
 void vascaino_goes_out(BathroomMonitor *monitor) {
     pthread_mutex_lock(&monitor->lock);
     if (monitor->occupied_by == Vasco) {
-        bool was_bathroom_full = monitor->amount_on_bathroom == monitor->size;
         monitor->amount_on_bathroom -= 1;
-        if (monitor->prioritized_team == Flamengo) {
+        if (monitor->prioritized_team == Flamengo && monitor->flamenguistas_waiting) {
             if (monitor->amount_on_bathroom == 0) {
                 monitor->occupied_by = None;
                 monitor->occupied_by_used_times = 0;
