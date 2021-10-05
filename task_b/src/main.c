@@ -12,8 +12,10 @@ void cat_wants_in(void **args) {
     if (should_loop_thread) {
         while (should_loop_thread) {
             cat_wants_service(monitor);
+            // printf("cat %d in\n", idx);
             sleep(amount_of_time_inside_service);
             cat_attended(monitor);
+            // printf("cat %d out\n", idx);
             sleep(amount_of_time_inside_service);
         }
     } else {
@@ -24,14 +26,17 @@ void cat_wants_in(void **args) {
 }
 
 void dog_wants_in(void **args) {
+    int idx = (uintptr_t )args[0];
     PetShopMonitor *monitor = args[1];
     int amount_of_time_inside_service = (uintptr_t) args[2];
     bool should_loop_thread = (uintptr_t) args[3];
     if (should_loop_thread) {
         while (true) {
             dog_wants_service(monitor);
+            // printf("dog %d in\n", idx);
             sleep(amount_of_time_inside_service);
             dog_attended(monitor);
+            // printf("dog %d out\n", idx);
             sleep(amount_of_time_inside_service);
         }
     } else {
@@ -54,63 +59,59 @@ void *monitor_info(void *arg) {
     PetShopMonitor *monitor = arg;
    struct timeval start, end;
    gettimeofday(&start, NULL);
-  while (loop_monitor_info) {
-      gettimeofday(&end, NULL);
-      usleep(16 * 1000);
-      PetShopMonitorInfo *m_info = petshop_monitor_info(monitor);
-       printf("\033[A");
-       printf("\033[A");
-       printf("\033[A");
-       printf("\033[A");
-       printf("\033[A");
-       printf("\033[A");
-       printf("%c[2K", 27);
-       double time_taken;
-       time_taken = (double)(end.tv_sec - start.tv_sec) * 1e6;
-       time_taken = (time_taken + (double)(end.tv_usec -
-                                   start.tv_usec)) *
-                    1e-6;
-       printf("\r\t\t\t\t\t\tTime since it started: %.2f s\n\n", time_taken);
-       printf("%c[2K", 27);
-       printf("\r\ton_service | attended_times | prior_animal | amount_on_service | dogs_waiting | cats_waiting | cats_attended | dogs_attended \n");
-       printf("%c[2K", 27);
-       char on_service[11];
-       char prior_animal[13];
-       sprintf(prior_animal, "%s", animal_str(m_info->prioritized_animal));
-       sprintf(on_service, "%s", animal_str(m_info->animal_being_attended));
-       fill_with_spaces(on_service, 11);
-       fill_with_spaces(prior_animal, 13);
-       char amount_on_service[18];
-       sprintf(amount_on_service, "%d", m_info->pets_on_service_room);
-       fill_with_spaces(amount_on_service, 18);
-       char dogs_waiting[13];
-       sprintf(dogs_waiting, "%d", m_info->dogs_waiting);
-       fill_with_spaces(dogs_waiting, 13);
-       char cats_waiting[13];
-       sprintf(cats_waiting, "%d", m_info->cats_waiting);
-       fill_with_spaces(cats_waiting, 13);
-       char cats_attended[14];
-       char dogs_attended[14];
-       sprintf(cats_attended, "%d", m_info->amount_of_cats_attended);
-       sprintf(dogs_attended, "%d", m_info->amount_of_dogs_attended);
-       fill_with_spaces(cats_attended, 14);
-       fill_with_spaces(cats_attended, 14);
-       char attended_times[15];
-       sprintf(attended_times, "%d", m_info->being_attended_used_times);
-       fill_with_spaces(attended_times, 15);
-       printf("\r\t%s | %s | %s | %s | %s | %s | %s | %s\n\n\n",
-              on_service,
-              attended_times,
-              prior_animal,
-              amount_on_service,
-              dogs_waiting,
-              cats_waiting,
-              cats_attended,
-              dogs_attended);
+ while (loop_monitor_info) {
+     gettimeofday(&end, NULL);
+     usleep(16 * 1000);
+     PetShopMonitorInfo *m_info = petshop_monitor_info(monitor);
+      printf("\033[A");
+      printf("\033[A");
+      printf("\033[A");
+      printf("\033[A");
+      printf("\033[A");
+      printf("\033[A");
+      printf("%c[2K", 27);
+      double time_taken;
+      time_taken = (double)(end.tv_sec - start.tv_sec) * 1e6;
+      time_taken = (time_taken + (double)(end.tv_usec -
+                                  start.tv_usec)) *
+                   1e-6;
+      printf("\r\t\t\t\t\t\tTime since it started: %.2f s\n\n", time_taken);
+      printf("%c[2K", 27);
+      printf("\r\ton_service | prior_animal | amount_on_service | dogs_waiting | cats_waiting | cats_attended | dogs_attended \n");
+      printf("%c[2K", 27);
+      char on_service[11];
+      char prior_animal[13];
+      sprintf(prior_animal, "%s", animal_str(m_info->prioritized_animal));
+      sprintf(on_service, "%s", animal_str(m_info->animal_being_attended));
+      fill_with_spaces(on_service, 11);
+      fill_with_spaces(prior_animal, 13);
+      char amount_on_service[18];
+      sprintf(amount_on_service, "%d", m_info->pets_on_service_room);
+      fill_with_spaces(amount_on_service, 18);
+      char dogs_waiting[13];
+      sprintf(dogs_waiting, "%d", m_info->dogs_waiting);
+      fill_with_spaces(dogs_waiting, 13);
+      char cats_waiting[13];
+      sprintf(cats_waiting, "%d", m_info->cats_waiting);
+      fill_with_spaces(cats_waiting, 13);
+      char cats_attended[14];
+      char dogs_attended[14];
+      sprintf(cats_attended, "%d", m_info->amount_of_cats_attended);
+      sprintf(dogs_attended, "%d", m_info->amount_of_dogs_attended);
+      fill_with_spaces(cats_attended, 14);
+      fill_with_spaces(cats_attended, 14);
+      printf("\r\t%s | %s | %s | %s | %s | %s | %s\n\n\n",
+             on_service,
+             prior_animal,
+             amount_on_service,
+             dogs_waiting,
+             cats_waiting,
+             cats_attended,
+             dogs_attended);
 
-      fflush(stdout);
-      free(m_info);
-  }
+     fflush(stdout);
+     free(m_info);
+ }
   return NULL;
 }
 
@@ -176,7 +177,7 @@ int main(int argc, char *argv[]) {
            time_inside_service,
            animal_str(initial_animal),
            should_loop_thread_str);
-    PetShopMonitor *monitor = new_petshop_monitor(service_room_size, Dog);
+    PetShopMonitor *monitor = new_petshop_monitor(service_room_size, Cat);
     pthread_create(&info_thread, NULL, monitor_info, monitor);
     void *(*initial_thread_cb)(void *) = (void *(*) (void *) )(initial_animal == Dog ? dog_wants_in : cat_wants_in);
    void *(*second_thread_cb)(void *) = (void *(*) (void *) )(initial_animal == Dog ? cat_wants_in : dog_wants_in);
